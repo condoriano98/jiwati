@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/*
+  Natural-health storefront theme.
+  Palette: leafy greens + warm neutrals, inspired by natural / organic stores.
+*/
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #1a2b1f;
+
+  --color-brand-50: #f1f8f2;
+  --color-brand-100: #ddeede;
+  --color-brand-200: #bcdcc0;
+  --color-brand-300: #8fc196;
+  --color-brand-400: #5ca066;
+  --color-brand-500: #3a8446;
+  --color-brand-600: #2c6a37;
+  --color-brand-700: #25542e;
+  --color-brand-800: #204428;
+  --color-brand-900: #1b3822;
+
+  --color-accent-400: #f4a93c;
+  --color-accent-500: #e8941a;
+
+  --color-muted: #f5f6f4;
+  --color-muted-foreground: #5d6b60;
+  --color-border: #e4e8e3;
+
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --radius: 0.75rem;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hide number input spinners for cleaner qty fields */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
