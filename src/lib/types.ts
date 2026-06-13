@@ -51,6 +51,8 @@ export type Address = {
   recipient: string;
   phone: string;
   line1: string;
+  village?: string;
+  district?: string;
   city: string;
   province: string;
   postal_code: string;

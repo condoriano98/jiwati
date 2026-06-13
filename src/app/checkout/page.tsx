@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,10 @@ import { Input, Label } from "@/components/ui/input";
 import { useCart } from "@/lib/cart-store";
 import { createClient } from "@/lib/supabase/client";
 import { formatIDR } from "@/lib/utils";
+import {
+  IndonesiaAddress,
+  type IndonesiaAddressValue,
+} from "@/components/checkout/indonesia-address";
 
 const FREE_SHIPPING_THRESHOLD = 300000;
 const FLAT_SHIPPING = 20000;
@@ -23,14 +27,19 @@ export default function CheckoutPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    recipient: "",
-    phone: "",
-    line1: "",
-    city: "",
+  const [form, setForm] = useState({ recipient: "", phone: "" });
+  const [region, setRegion] = useState<IndonesiaAddressValue>({
     province: "",
+    city: "",
+    district: "",
+    village: "",
     postal_code: "",
+    line1: "",
   });
+  const handleRegionChange = useCallback(
+    (v: IndonesiaAddressValue) => setRegion(v),
+    [],
+  );
 
   useEffect(() => {
     createClient()
@@ -59,7 +68,7 @@ export default function CheckoutPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
-        address: form,
+        address: { ...form, ...region },
       }),
     });
     const data = await res.json();
@@ -113,27 +122,17 @@ export default function CheckoutPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="phone">No. Telepon</Label>
-              <Input id="phone" required value={form.phone} onChange={update("phone")} />
+              <Input
+                id="phone"
+                type="tel"
+                required
+                placeholder="cth. 08123456789"
+                value={form.phone}
+                onChange={update("phone")}
+              />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="line1">Alamat Lengkap</Label>
-            <Input id="line1" required value={form.line1} onChange={update("line1")} />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="city">Kota</Label>
-              <Input id="city" required value={form.city} onChange={update("city")} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="province">Provinsi</Label>
-              <Input id="province" required value={form.province} onChange={update("province")} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="postal">Kode Pos</Label>
-              <Input id="postal" required value={form.postal_code} onChange={update("postal_code")} />
-            </div>
-          </div>
+          <IndonesiaAddress onChange={handleRegionChange} />
         </Card>
 
         <Card className="h-fit p-6">

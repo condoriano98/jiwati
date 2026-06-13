@@ -45,6 +45,21 @@ export default async function AdminOrdersPage() {
                 </span>
               ))}
             </div>
+            {o.shipping_address && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                📦 {o.shipping_address.phone} •{" "}
+                {[
+                  o.shipping_address.line1,
+                  o.shipping_address.village,
+                  o.shipping_address.district,
+                  o.shipping_address.city,
+                  o.shipping_address.province,
+                  o.shipping_address.postal_code,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
+            )}
           </Card>
         ))}
         {(!orders || orders.length === 0) && (

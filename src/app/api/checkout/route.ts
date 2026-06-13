@@ -21,9 +21,11 @@ const schema = z.object({
     recipient: z.string().min(1),
     phone: z.string().min(1),
     line1: z.string().min(1),
-    city: z.string().min(1),
     province: z.string().min(1),
-    postal_code: z.string().min(1),
+    city: z.string().min(1),
+    district: z.string().min(1),
+    village: z.string().min(1),
+    postal_code: z.string().min(4),
   }),
 });
 
