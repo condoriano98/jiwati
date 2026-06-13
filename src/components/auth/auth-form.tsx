@@ -56,7 +56,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {mode === "login"
-          ? "Selamat datang kembali di Natural Farm"
+          ? "Selamat datang kembali di Jiwati"
           : "Daftar untuk mulai belanja lebih mudah"}
       </p>
 

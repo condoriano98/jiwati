@@ -1,4 +1,4 @@
-# Natural Farm — Toko Kesehatan & Nutrisi Alami
+# Jiwati — Toko Kesehatan & Nutrisi Alami
 
 E-commerce store (Bahasa Indonesia) for natural health & nutrition products,
 inspired by naturalfarm.id. Built with **Next.js 16 (App Router)**,

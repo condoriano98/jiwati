@@ -7,7 +7,7 @@ export default function ContactPage() {
   const items = [
     { icon: Phone, title: "Telepon", value: "+62 812 3456 7890" },
     { icon: MessageCircle, title: "WhatsApp", value: "+62 812 3456 7890" },
-    { icon: Mail, title: "Email", value: "halo@naturalfarm.id" },
+    { icon: Mail, title: "Email", value: "halo@jiwati.id" },
     { icon: MapPin, title: "Alamat", value: "Jakarta, Indonesia" },
   ];
   return (

@@ -12,8 +12,8 @@ const sans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Natural Farm — Toko Kesehatan & Nutrisi Alami",
-    template: "%s — Natural Farm",
+    default: "Jiwati — Toko Kesehatan & Nutrisi Alami",
+    template: "%s — Jiwati",
   },
   description:
     "Belanja vitamin, suplemen, protein, dan produk herbal alami terpercaya. Gratis ongkir & pembayaran mudah.",

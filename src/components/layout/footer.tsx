@@ -10,7 +10,7 @@ export function Footer() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600">
               <Leaf className="h-5 w-5" />
             </span>
-            Natural Farm
+            Jiwati
           </div>
           <p className="mt-3 text-sm text-brand-200">
             Toko kesehatan & nutrisi alami terpercaya. Produk pilihan untuk
@@ -41,14 +41,14 @@ export function Footer() {
           <h4 className="mb-3 font-semibold text-white">Hubungi Kami</h4>
           <ul className="space-y-2 text-sm">
             <li className="flex items-center gap-2"><Phone className="h-4 w-4" /> +62 812 3456 7890</li>
-            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> halo@naturalfarm.id</li>
+            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> halo@jiwati.id</li>
             <li className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4" /> Jakarta, Indonesia</li>
           </ul>
         </div>
       </div>
 
       <div className="border-t border-brand-800 py-4 text-center text-xs text-brand-300">
-        © {new Date().getFullYear()} Natural Farm. Demo store dibangun dengan
+        © {new Date().getFullYear()} Jiwati. Demo store dibangun dengan
         Next.js & Supabase.
       </div>
     </footer>

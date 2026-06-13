@@ -23,7 +23,7 @@ export async function Header() {
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
             <Leaf className="h-5 w-5" />
           </span>
-          <span className="text-lg tracking-tight">Natural Farm</span>
+          <span className="text-lg tracking-tight">Jiwati</span>
         </Link>
 
         {/* Search */}

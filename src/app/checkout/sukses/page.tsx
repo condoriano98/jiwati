@@ -17,7 +17,7 @@ export default async function CheckoutSuccessPage({
       <CheckCircle2 className="h-16 w-16 text-brand-500" />
       <h1 className="mt-4 text-2xl font-bold">Pesanan Berhasil!</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Terima kasih telah berbelanja di Natural Farm. Pesanan Anda sedang kami proses.
+        Terima kasih telah berbelanja di Jiwati. Pesanan Anda sedang kami proses.
       </p>
       {order && (
         <p className="mt-1 font-mono text-xs text-muted-foreground">
