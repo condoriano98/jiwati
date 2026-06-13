@@ -30,8 +30,19 @@ npm run dev
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Public anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Server-only; used by admin actions & webhooks |
-| `MIDTRANS_SERVER_KEY` | ⛔️ optional | Without it, checkout simulates a paid order |
+| `XENDIT_SECRET_KEY` | ⛔️ optional | Enables Xendit checkout (takes priority) |
+| `XENDIT_CALLBACK_TOKEN` | ⛔️ optional | Verifies the Xendit webhook |
+| `MIDTRANS_SERVER_KEY` | ⛔️ optional | Enables Midtrans checkout |
 | `MIDTRANS_IS_PRODUCTION` | ⛔️ optional | `true` for production Midtrans |
+
+**Payments.** Checkout picks a gateway in this order: **Xendit → Midtrans →
+simulated**. With none configured it simulates a paid order (useful for demos).
+
+- **Xendit:** set `XENDIT_SECRET_KEY`. In the Xendit dashboard → **Settings →
+  Webhooks**, point the *Invoices paid/expired* callback at
+  `https://your-domain/api/xendit/webhook` and set the same token in
+  `XENDIT_CALLBACK_TOKEN`.
+- **Midtrans:** set `MIDTRANS_SERVER_KEY`; webhook at `/api/midtrans/notification`.
 
 ## Database
 

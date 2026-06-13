@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isMidtransConfigured, createSnapTransaction } from "@/lib/midtrans";
+import { isXenditConfigured, createInvoice } from "@/lib/xendit";
 
 const FREE_SHIPPING_THRESHOLD = 300000;
 const FLAT_SHIPPING = 20000;
@@ -95,7 +96,44 @@ export async function POST(request: Request) {
     .from("order_items")
     .insert(orderItems.map((it) => ({ ...it, order_id: order.id })));
 
-  // Try a real Midtrans payment; otherwise simulate success for the demo.
+  const origin = new URL(request.url).origin;
+
+  // Gateway priority: Xendit → Midtrans → simulated (demo).
+  // A configured gateway that errors surfaces a real error rather than
+  // faking a paid order.
+  if (isXenditConfigured()) {
+    try {
+      const invoice = await createInvoice({
+        externalId: order.id,
+        amount: total,
+        payerEmail: user.email ?? "",
+        description: `Pesanan Jiwati #${order.id.slice(0, 8)}`,
+        items: [
+          ...orderItems.map((it) => ({
+            name: it.name,
+            quantity: it.quantity,
+            price: it.price,
+          })),
+          ...(shipping > 0
+            ? [{ name: "Ongkos Kirim", quantity: 1, price: shipping }]
+            : []),
+        ],
+        successRedirectUrl: `${origin}/checkout/sukses?order=${order.id}`,
+        failureRedirectUrl: `${origin}/checkout?gagal=1`,
+      });
+      await supabase
+        .from("orders")
+        .update({ midtrans_order_id: invoice.id })
+        .eq("id", order.id);
+      return NextResponse.json({ redirectUrl: invoice.invoiceUrl });
+    } catch {
+      return NextResponse.json(
+        { error: "Gagal membuat pembayaran. Silakan coba lagi." },
+        { status: 502 },
+      );
+    }
+  }
+
   if (isMidtransConfigured()) {
     try {
       const snap = await createSnapTransaction({
@@ -122,11 +160,14 @@ export async function POST(request: Request) {
         .eq("id", order.id);
       return NextResponse.json({ redirectUrl: snap.redirect_url });
     } catch {
-      // fall through to simulated success
+      return NextResponse.json(
+        { error: "Gagal membuat pembayaran. Silakan coba lagi." },
+        { status: 502 },
+      );
     }
   }
 
-  // Simulated payment (no gateway configured): mark as paid.
+  // No gateway configured: simulate a paid order so the demo flow completes.
   const admin = createAdminClient();
   await admin
     .from("orders")

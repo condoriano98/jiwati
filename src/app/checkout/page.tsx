@@ -39,6 +39,10 @@ export default function CheckoutPage() {
         setSignedIn(Boolean(data.user));
         setAuthChecked(true);
       });
+    // Surface a message when the payment gateway redirects back on failure.
+    if (new URLSearchParams(window.location.search).get("gagal") === "1") {
+      setError("Pembayaran dibatalkan atau gagal. Silakan coba lagi.");
+    }
   }, []);
 
   function update(key: keyof typeof form) {
