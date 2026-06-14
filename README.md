@@ -78,3 +78,29 @@ created. Brands and categories are created automatically when referenced.
   trusting client-supplied prices.
 - Row Level Security is enabled on all tables; admin writes are gated by an
   `is_admin()` SQL helper.
+
+## Admin API (Shopify-style)
+
+A versioned REST API for programmatic access to products and orders,
+authenticated with API keys you generate in **/admin/api**.
+
+Send the key as `Authorization: Bearer <token>` or `X-API-Key: <token>`.
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/api/v1/products` | List products (`limit`, `page`, `search`, `active`) |
+| POST | `/api/v1/products` | Create a product |
+| GET | `/api/v1/products/:id` | Get a product |
+| PATCH | `/api/v1/products/:id` | Update a product |
+| DELETE | `/api/v1/products/:id` | Delete a product |
+| GET | `/api/v1/orders` | List orders (`status`, `payment_status`) |
+| GET | `/api/v1/orders/:id` | Get an order |
+| PATCH | `/api/v1/orders/:id` | Update order status |
+
+```bash
+curl https://<domain>/api/v1/products?limit=10 \
+  -H "Authorization: Bearer jw_live_xxx"
+```
+
+Keys are stored only as a SHA-256 hash (shown once on creation) and can be
+revoked anytime. The table lives in `supabase/migrations/0002_api_keys.sql`.

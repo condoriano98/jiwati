@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard, Package, Upload, ShoppingBag, Store, Leaf } from "lucide-react";
+import { LayoutDashboard, Package, Upload, ShoppingBag, Store, Leaf, KeyRound } from "lucide-react";
 import { requireAdmin } from "@/lib/auth-guard";
 
 const NAV = [
@@ -7,6 +7,7 @@ const NAV = [
   { href: "/admin/produk", label: "Produk", icon: Package },
   { href: "/admin/produk/import", label: "Import Produk", icon: Upload },
   { href: "/admin/pesanan", label: "Pesanan", icon: ShoppingBag },
+  { href: "/admin/api", label: "API & Integrasi", icon: KeyRound },
 ];
 
 export default async function AdminLayout({
