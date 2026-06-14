@@ -74,7 +74,12 @@ export default async function AdminProductsPage() {
                       <span className={p.stock > 0 ? "" : "text-red-600"}>{p.stock}</span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <DeleteProductButton id={p.id} name={p.name} />
+                      <div className="flex items-center justify-end gap-4">
+                        <Link href={`/admin/produk/${p.id}`} className="text-sm font-medium text-brand-700 hover:underline">
+                          Edit / Varian
+                        </Link>
+                        <DeleteProductButton id={p.id} name={p.name} />
+                      </div>
                     </td>
                   </tr>
                 );

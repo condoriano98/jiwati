@@ -4,11 +4,16 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartLine } from "@/lib/types";
 
+/** Stable identity for a cart line (a product + a specific variant). */
+export function lineKey(l: Pick<CartLine, "productId" | "variantId">): string {
+  return `${l.productId}:${l.variantId ?? ""}`;
+}
+
 type CartState = {
   lines: CartLine[];
   add: (line: Omit<CartLine, "quantity">, qty?: number) => void;
-  setQty: (productId: string, qty: number) => void;
-  remove: (productId: string) => void;
+  setQty: (key: string, qty: number) => void;
+  remove: (key: string) => void;
   clear: () => void;
   count: () => number;
   subtotal: () => number;
@@ -20,31 +25,34 @@ export const useCart = create<CartState>()(
       lines: [],
       add: (line, qty = 1) =>
         set((state) => {
-          const existing = state.lines.find((l) => l.productId === line.productId);
+          const key = lineKey(line);
+          const existing = state.lines.find((l) => lineKey(l) === key);
           if (existing) {
             return {
               lines: state.lines.map((l) =>
-                l.productId === line.productId
+                lineKey(l) === key
                   ? { ...l, quantity: Math.min(l.stock, l.quantity + qty) }
                   : l,
               ),
             };
           }
-          return { lines: [...state.lines, { ...line, quantity: Math.min(line.stock, qty) }] };
+          return {
+            lines: [...state.lines, { ...line, quantity: Math.min(line.stock, qty) }],
+          };
         }),
-      setQty: (productId, qty) =>
+      setQty: (key, qty) =>
         set((state) => ({
           lines: state.lines
             .map((l) =>
-              l.productId === productId
+              lineKey(l) === key
                 ? { ...l, quantity: Math.max(0, Math.min(l.stock, qty)) }
                 : l,
             )
             .filter((l) => l.quantity > 0),
         })),
-      remove: (productId) =>
+      remove: (key) =>
         set((state) => ({
-          lines: state.lines.filter((l) => l.productId !== productId),
+          lines: state.lines.filter((l) => lineKey(l) !== key),
         })),
       clear: () => set({ lines: [] }),
       count: () => get().lines.reduce((n, l) => n + l.quantity, 0),

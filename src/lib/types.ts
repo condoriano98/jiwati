@@ -17,6 +17,19 @@ export type Brand = {
   logo: string | null;
 };
 
+export type Variant = {
+  id: string;
+  product_id: string;
+  title: string;
+  options: Record<string, string>;
+  price: number;
+  compare_at_price: number | null;
+  sku: string | null;
+  stock: number;
+  position: number;
+  is_active: boolean;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -35,6 +48,7 @@ export type Product = {
   // optional joined fields
   brand?: Brand | null;
   categories?: Category[];
+  variants?: Variant[];
 };
 
 export type Profile = {
@@ -103,6 +117,8 @@ export type BlogPost = {
 
 export type CartLine = {
   productId: string;
+  variantId?: string | null;
+  variantTitle?: string | null;
   slug: string;
   name: string;
   price: number;

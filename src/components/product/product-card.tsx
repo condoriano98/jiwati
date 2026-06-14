@@ -66,7 +66,16 @@ export function ProductCard({ product }: { product: Product }) {
         </div>
 
         <div className="mt-3">
-          <AddToCart product={product} />
+          {(product.variants?.length ?? 0) > 0 ? (
+            <Link
+              href={`/produk/${product.slug}`}
+              className="flex h-10 w-full items-center justify-center rounded-lg border border-brand-600 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+            >
+              Pilih Opsi
+            </Link>
+          ) : (
+            <AddToCart product={product} />
+          )}
         </div>
       </div>
     </div>

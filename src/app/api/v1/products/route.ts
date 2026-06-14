@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/utils";
 
 const PRODUCT_SELECT =
-  "id, name, slug, description, price, compare_at_price, stock, sku, images, rating, is_bestseller, is_active, created_at, brand:brands(id,name,slug)";
+  "id, name, slug, description, price, compare_at_price, stock, sku, images, rating, is_bestseller, is_active, created_at, brand:brands(id,name,slug), variants:product_variants(id,title,options,price,compare_at_price,sku,stock,position,is_active)";
 
 // GET /api/v1/products?limit=&page=&search=&active=
 export async function GET(request: Request) {
@@ -50,6 +50,18 @@ const createSchema = z.object({
   category: z.string().nullable().optional(),
   is_bestseller: z.boolean().optional(),
   is_active: z.boolean().optional(),
+  variants: z
+    .array(
+      z.object({
+        title: z.string().min(1),
+        price: z.number().nonnegative(),
+        compare_at_price: z.number().nonnegative().nullable().optional(),
+        sku: z.string().nullable().optional(),
+        stock: z.number().int().nonnegative().default(0),
+        position: z.number().int().optional(),
+      }),
+    )
+    .optional(),
 });
 
 // POST /api/v1/products
@@ -121,5 +133,21 @@ export async function POST(request: Request) {
     await admin.from("product_categories").upsert({ product_id: product.id, category_id: categoryId });
   }
 
-  return NextResponse.json({ product }, { status: 201 });
+  if (p.variants?.length) {
+    await admin.from("product_variants").insert(
+      p.variants.map((v, i) => ({
+        product_id: product.id,
+        title: v.title,
+        price: v.price,
+        compare_at_price: v.compare_at_price ?? null,
+        sku: v.sku ?? null,
+        stock: v.stock ?? 0,
+        position: v.position ?? i,
+      })),
+    );
+  }
+
+  // Re-fetch so the response includes the created variants.
+  const { data: full } = await admin.from("products").select(PRODUCT_SELECT).eq("id", product.id).single();
+  return NextResponse.json({ product: full ?? product }, { status: 201 });
 }

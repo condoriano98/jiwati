@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Star, Truck, ShieldCheck, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AddToCart } from "@/components/product/add-to-cart";
+import { ProductOptions } from "@/components/product/product-options";
 import { ProductCard } from "@/components/product/product-card";
 import { formatIDR } from "@/lib/utils";
 import { getProductBySlug, getProducts } from "@/lib/queries";
@@ -37,6 +38,8 @@ export default async function ProductDetailPage({
           ((product.compare_at_price - product.price) / product.compare_at_price) * 100,
         )
       : 0;
+
+  const hasVariants = (product.variants?.length ?? 0) > 0;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -80,38 +83,40 @@ export default async function ProductDetailPage({
           )}
           <h1 className="mt-1 text-3xl font-bold tracking-tight">{product.name}</h1>
 
-          <div className="mt-2 flex items-center gap-2 text-sm">
-            <span className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-accent-400 text-accent-400" />
-              {product.rating.toFixed(1)}
-            </span>
-            <span className="text-muted-foreground">•</span>
-            <span className={product.stock > 0 ? "text-green-600" : "text-red-600"}>
-              {product.stock > 0 ? `Stok ${product.stock}` : "Stok habis"}
-            </span>
-          </div>
-
-          <div className="mt-4 flex items-baseline gap-3">
-            <span className="text-3xl font-extrabold text-brand-700">
-              {formatIDR(product.price)}
-            </span>
-            {discount > 0 && (
-              <>
-                <span className="text-lg text-muted-foreground line-through">
-                  {formatIDR(product.compare_at_price!)}
-                </span>
-                <Badge variant="danger">-{discount}%</Badge>
-              </>
-            )}
+          <div className="mt-2 flex items-center gap-1 text-sm">
+            <Star className="h-4 w-4 fill-accent-400 text-accent-400" />
+            {product.rating.toFixed(1)}
           </div>
 
           {product.description && (
             <p className="mt-4 text-muted-foreground">{product.description}</p>
           )}
 
-          <div className="mt-6">
-            <AddToCart product={product} withQty />
-          </div>
+          {hasVariants ? (
+            <ProductOptions product={product} />
+          ) : (
+            <>
+              <div className="mt-4 flex items-baseline gap-3">
+                <span className="text-3xl font-extrabold text-brand-700">
+                  {formatIDR(product.price)}
+                </span>
+                {discount > 0 && (
+                  <>
+                    <span className="text-lg text-muted-foreground line-through">
+                      {formatIDR(product.compare_at_price!)}
+                    </span>
+                    <Badge variant="danger">-{discount}%</Badge>
+                  </>
+                )}
+              </div>
+              <p className={`mt-1 text-sm ${product.stock > 0 ? "text-green-600" : "text-red-600"}`}>
+                {product.stock > 0 ? `Stok ${product.stock}` : "Stok habis"}
+              </p>
+              <div className="mt-6">
+                <AddToCart product={product} withQty />
+              </div>
+            </>
+          )}
 
           <div className="mt-6 grid grid-cols-3 gap-3 border-t border-border pt-6 text-center text-xs">
             <div className="flex flex-col items-center gap-1">

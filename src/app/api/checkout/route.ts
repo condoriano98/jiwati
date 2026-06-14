@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isMidtransConfigured, createSnapTransaction } from "@/lib/midtrans";
 import { isXenditConfigured, createInvoice } from "@/lib/xendit";
+import { validateDiscount } from "@/lib/discounts";
 
 const FREE_SHIPPING_THRESHOLD = 300000;
 const FLAT_SHIPPING = 20000;
@@ -13,10 +14,12 @@ const schema = z.object({
     .array(
       z.object({
         productId: z.string().uuid(),
+        variantId: z.string().uuid().nullable().optional(),
         quantity: z.number().int().positive(),
       }),
     )
     .min(1),
+  discountCode: z.string().optional(),
   address: z.object({
     recipient: z.string().min(1),
     phone: z.string().min(1),
@@ -42,40 +45,89 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Data tidak valid" }, { status: 400 });
   }
-  const { items, address } = parsed.data;
+  const { items, address, discountCode: discount } = parsed.data;
 
   // Re-price on the server from the DB — never trust client prices.
+  const productIds = [...new Set(items.map((i) => i.productId))];
+  const variantIds = items.map((i) => i.variantId).filter(Boolean) as string[];
+
   const { data: products } = await supabase
     .from("products")
     .select("id, name, price, stock, images")
-    .in("id", items.map((i) => i.productId));
+    .in("id", productIds);
+  const productMap = new Map((products ?? []).map((p) => [p.id, p]));
 
-  if (!products || products.length !== items.length) {
-    return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 400 });
+  const variantMap = new Map<string, { id: string; product_id: string; title: string; price: number; stock: number }>();
+  if (variantIds.length) {
+    const { data: variants } = await supabase
+      .from("product_variants")
+      .select("id, product_id, title, price, stock")
+      .in("id", variantIds);
+    for (const v of variants ?? []) variantMap.set(v.id, v);
   }
 
   let subtotal = 0;
   const orderItems = [];
   for (const i of items) {
-    const p = products.find((x) => x.id === i.productId)!;
-    if (i.quantity > p.stock) {
-      return NextResponse.json(
-        { error: `Stok ${p.name} tidak mencukupi` },
-        { status: 400 },
-      );
+    const p = productMap.get(i.productId);
+    if (!p) {
+      return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 400 });
     }
-    subtotal += p.price * i.quantity;
-    orderItems.push({
-      product_id: p.id,
-      name: p.name,
-      price: p.price,
-      quantity: i.quantity,
-      image: p.images?.[0] ?? null,
-    });
+    if (i.variantId) {
+      const v = variantMap.get(i.variantId);
+      if (!v || v.product_id !== p.id) {
+        return NextResponse.json({ error: "Varian tidak ditemukan" }, { status: 400 });
+      }
+      if (i.quantity > v.stock) {
+        return NextResponse.json(
+          { error: `Stok ${p.name} (${v.title}) tidak mencukupi` },
+          { status: 400 },
+        );
+      }
+      subtotal += v.price * i.quantity;
+      orderItems.push({
+        product_id: p.id,
+        variant_id: v.id,
+        variant_title: v.title,
+        name: p.name,
+        price: v.price,
+        quantity: i.quantity,
+        image: p.images?.[0] ?? null,
+      });
+    } else {
+      if (i.quantity > p.stock) {
+        return NextResponse.json(
+          { error: `Stok ${p.name} tidak mencukupi` },
+          { status: 400 },
+        );
+      }
+      subtotal += p.price * i.quantity;
+      orderItems.push({
+        product_id: p.id,
+        variant_id: null,
+        variant_title: null,
+        name: p.name,
+        price: p.price,
+        quantity: i.quantity,
+        image: p.images?.[0] ?? null,
+      });
+    }
+  }
+
+  // Apply a discount code (server-validated against the fresh subtotal).
+  let discountAmount = 0;
+  let discountCode: string | null = null;
+  if (discount) {
+    const result = await validateDiscount(discount, subtotal);
+    if (!result.valid) {
+      return NextResponse.json({ error: result.message }, { status: 400 });
+    }
+    discountAmount = result.amount ?? 0;
+    discountCode = result.code ?? null;
   }
 
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING;
-  const total = subtotal + shipping;
+  const total = Math.max(0, subtotal - discountAmount) + shipping;
 
   // Create the order (RLS ensures user_id matches the caller).
   const { data: order, error: orderErr } = await supabase
@@ -83,6 +135,8 @@ export async function POST(request: Request) {
     .insert({
       user_id: user.id,
       subtotal,
+      discount_code: discountCode,
+      discount_amount: discountAmount,
       shipping_cost: shipping,
       total,
       shipping_address: address,

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { useCart } from "@/lib/cart-store";
+import { useCart, lineKey } from "@/lib/cart-store";
 import { createClient } from "@/lib/supabase/client";
 import { formatIDR } from "@/lib/utils";
 import {
@@ -27,6 +27,32 @@ export default function CheckoutPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Discount code
+  const [codeInput, setCodeInput] = useState("");
+  const [applying, setApplying] = useState(false);
+  const [discount, setDiscount] = useState<{ code: string; amount: number } | null>(null);
+  const [discountMsg, setDiscountMsg] = useState<string | null>(null);
+  const discountAmount = discount?.amount ?? 0;
+
+  async function applyCode() {
+    setApplying(true);
+    setDiscountMsg(null);
+    const res = await fetch("/api/discounts/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: codeInput, subtotal }),
+    });
+    const data = await res.json();
+    if (data.valid) {
+      setDiscount({ code: data.code, amount: data.amount });
+      setDiscountMsg(data.message);
+    } else {
+      setDiscount(null);
+      setDiscountMsg(data.message ?? "Kode tidak valid");
+    }
+    setApplying(false);
+  }
   const [form, setForm] = useState({ recipient: "", phone: "" });
   const [region, setRegion] = useState<IndonesiaAddressValue>({
     province: "",
@@ -67,7 +93,12 @@ export default function CheckoutPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+        items: lines.map((l) => ({
+          productId: l.productId,
+          variantId: l.variantId ?? null,
+          quantity: l.quantity,
+        })),
+        discountCode: discount?.code,
         address: { ...form, ...region },
       }),
     });
@@ -139,18 +170,54 @@ export default function CheckoutPage() {
           <h2 className="mb-4 font-bold">Ringkasan</h2>
           <div className="space-y-2 text-sm">
             {lines.map((l) => (
-              <div key={l.productId} className="flex justify-between">
-                <span className="text-muted-foreground">{l.quantity} × {l.name}</span>
+              <div key={lineKey(l)} className="flex justify-between">
+                <span className="text-muted-foreground">
+                  {l.quantity} × {l.name}
+                  {l.variantTitle ? ` (${l.variantTitle})` : ""}
+                </span>
                 <span>{formatIDR(l.price * l.quantity)}</span>
               </div>
             ))}
+
+            {/* Discount code */}
+            <div className="border-t border-border pt-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Kode diskon"
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                  className="h-9"
+                />
+                <Button type="button" variant="outline" size="sm" onClick={applyCode} disabled={applying || !codeInput}>
+                  {applying ? "…" : "Terapkan"}
+                </Button>
+              </div>
+              {discountMsg && (
+                <p className={`mt-1 text-xs ${discount ? "text-green-600" : "text-red-600"}`}>
+                  {discountMsg}
+                </p>
+              )}
+            </div>
+
             <div className="flex justify-between border-t border-border pt-2">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{formatIDR(subtotal)}</span>
+            </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Diskon ({discount?.code})</span>
+                <span>−{formatIDR(discountAmount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
               <span className="text-muted-foreground">Ongkir</span>
               <span>{shipping === 0 ? "Gratis" : formatIDR(shipping)}</span>
             </div>
             <div className="flex justify-between border-t border-border pt-2 text-base font-bold">
               <span>Total</span>
-              <span className="text-brand-700">{formatIDR(subtotal + shipping)}</span>
+              <span className="text-brand-700">
+                {formatIDR(Math.max(0, subtotal - discountAmount) + shipping)}
+              </span>
             </div>
           </div>
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}

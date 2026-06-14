@@ -1,18 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Product, Category, BlogPost } from "@/lib/types";
+import type { Product, Category, BlogPost, Variant } from "@/lib/types";
 
 const PRODUCT_SELECT =
-  "*, brand:brands(*), product_categories(categories(*))";
+  "*, brand:brands(*), product_categories(categories(*)), variants:product_variants(*)";
 
 type RawProduct = Omit<Product, "categories"> & {
   product_categories?: { categories: Category }[];
+  variants?: Variant[];
 };
 
 function shape(row: RawProduct): Product {
-  const { product_categories, ...rest } = row;
+  const { product_categories, variants, ...rest } = row;
   return {
     ...rest,
     categories: product_categories?.map((pc) => pc.categories) ?? [],
+    variants: (variants ?? [])
+      .filter((v) => v.is_active)
+      .sort((a, b) => a.position - b.position),
   };
 }
 

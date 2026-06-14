@@ -4,7 +4,7 @@ import { authenticateApiKey, apiError } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const PRODUCT_SELECT =
-  "id, name, slug, description, price, compare_at_price, stock, sku, images, rating, is_bestseller, is_active, created_at, brand:brands(id,name,slug)";
+  "id, name, slug, description, price, compare_at_price, stock, sku, images, rating, is_bestseller, is_active, created_at, brand:brands(id,name,slug), variants:product_variants(id,title,options,price,compare_at_price,sku,stock,position,is_active)";
 
 // GET /api/v1/products/:id
 export async function GET(

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useCart } from "@/lib/cart-store";
+import { useCart, lineKey } from "@/lib/cart-store";
 import { formatIDR } from "@/lib/utils";
 
 const FREE_SHIPPING_THRESHOLD = 300000;
@@ -39,7 +39,7 @@ export default function CartPage() {
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="space-y-3 lg:col-span-2">
           {lines.map((l) => (
-            <Card key={l.productId} className="flex gap-4 p-3">
+            <Card key={lineKey(l)} className="flex gap-4 p-3">
               <Link
                 href={`/produk/${l.slug}`}
                 className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted"
@@ -52,15 +52,18 @@ export default function CartPage() {
                 <Link href={`/produk/${l.slug}`} className="font-semibold leading-snug hover:text-brand-700">
                   {l.name}
                 </Link>
+                {l.variantTitle && (
+                  <span className="text-xs text-muted-foreground">{l.variantTitle}</span>
+                )}
                 <span className="text-sm font-bold text-brand-700">{formatIDR(l.price)}</span>
                 <div className="mt-auto flex items-center justify-between">
                   <div className="flex h-9 items-center rounded-lg border border-border">
-                    <button onClick={() => setQty(l.productId, l.quantity - 1)} className="px-3 text-muted-foreground hover:text-brand-700">−</button>
+                    <button onClick={() => setQty(lineKey(l), l.quantity - 1)} className="px-3 text-muted-foreground hover:text-brand-700">−</button>
                     <span className="w-8 text-center text-sm font-semibold">{l.quantity}</span>
-                    <button onClick={() => setQty(l.productId, l.quantity + 1)} className="px-3 text-muted-foreground hover:text-brand-700">+</button>
+                    <button onClick={() => setQty(lineKey(l), l.quantity + 1)} className="px-3 text-muted-foreground hover:text-brand-700">+</button>
                   </div>
                   <button
-                    onClick={() => remove(l.productId)}
+                    onClick={() => remove(lineKey(l))}
                     className="inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-700"
                   >
                     <Trash2 className="h-4 w-4" /> Hapus
