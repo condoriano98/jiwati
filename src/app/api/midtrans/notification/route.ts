@@ -46,6 +46,10 @@ export async function POST(request: Request) {
       .from("orders")
       .update({ status, payment_status: paymentStatus })
       .eq("id", order_id);
+    // Decrement inventory once the order is confirmed paid.
+    if (paymentStatus === "paid") {
+      await admin.rpc("apply_order_stock", { p_order_id: order_id });
+    }
   }
 
   return NextResponse.json({ received: true });

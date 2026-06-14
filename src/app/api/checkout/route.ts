@@ -175,6 +175,7 @@ export async function POST(request: Request) {
     .from("orders")
     .update({ status: "paid", payment_status: "paid" })
     .eq("id", order.id);
+  await admin.rpc("apply_order_stock", { p_order_id: order.id });
 
   return NextResponse.json({ redirectUrl: `/checkout/sukses?order=${order.id}` });
 }
