@@ -104,3 +104,23 @@ curl https://<domain>/api/v1/products?limit=10 \
 
 Keys are stored only as a SHA-256 hash (shown once on creation) and can be
 revoked anytime. The table lives in `supabase/migrations/0002_api_keys.sql`.
+
+### Scopes, rate limiting & webhooks (Phase 3)
+
+API keys carry **scopes** (`read_products`, `write_products`, `read_orders`,
+`write_orders`, `read_discounts`, `write_discounts`, `manage_webhooks`; a key
+with `all` passes any check). Requests are rate-limited to **120/min per key**
+(HTTP 429 when exceeded).
+
+**Outbound webhooks** notify external systems of events. Register endpoints in
+**/admin/webhook** or via `/api/v1/webhooks`. Topics: `order.created`,
+`order.paid`, `product.created`, `product.updated`, `product.deleted`. Each
+delivery is signed — verify the `X-Jiwati-Hmac-SHA256` header:
+
+```js
+const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+// compare to req.headers["x-jiwati-hmac-sha256"]
+```
+
+Migrations: `supabase/migrations/0003_commerce.sql` (variants, discounts,
+inventory) and `0004_webhooks_api.sql` (webhooks, rate limiting).

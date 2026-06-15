@@ -3,13 +3,14 @@ import { z } from "zod";
 import { authenticateApiKey, apiError } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { slugify } from "@/lib/utils";
+import { emitEvent } from "@/lib/webhooks";
 
 const PRODUCT_SELECT =
   "id, name, slug, description, price, compare_at_price, stock, sku, images, rating, is_bestseller, is_active, created_at, brand:brands(id,name,slug), variants:product_variants(id,title,options,price,compare_at_price,sku,stock,position,is_active)";
 
-// GET /api/v1/products?limit=&page=&search=&active=
+// GET /api/v1/products?limit=&page=&search=&active=&updated_since=
 export async function GET(request: Request) {
-  const auth = await authenticateApiKey(request);
+  const auth = await authenticateApiKey(request, "read_products");
   if (!auth.ok) return auth.response;
 
   const url = new URL(request.url);
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
   const page = Math.max(Number(url.searchParams.get("page")) || 1, 1);
   const search = url.searchParams.get("search");
   const active = url.searchParams.get("active");
+  const updatedSince = url.searchParams.get("updated_since");
 
   const admin = createAdminClient();
   let query = admin
@@ -28,6 +30,7 @@ export async function GET(request: Request) {
   if (search) query = query.ilike("name", `%${search}%`);
   if (active === "true") query = query.eq("is_active", true);
   if (active === "false") query = query.eq("is_active", false);
+  if (updatedSince) query = query.gte("updated_at", updatedSince);
 
   const { data, count, error } = await query;
   if (error) return apiError(error.message, 500);
@@ -66,7 +69,7 @@ const createSchema = z.object({
 
 // POST /api/v1/products
 export async function POST(request: Request) {
-  const auth = await authenticateApiKey(request);
+  const auth = await authenticateApiKey(request, "write_products");
   if (!auth.ok) return auth.response;
 
   let body: unknown;
@@ -149,5 +152,6 @@ export async function POST(request: Request) {
 
   // Re-fetch so the response includes the created variants.
   const { data: full } = await admin.from("products").select(PRODUCT_SELECT).eq("id", product.id).single();
+  await emitEvent("product.created", full ?? product);
   return NextResponse.json({ product: full ?? product }, { status: 201 });
 }

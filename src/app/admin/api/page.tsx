@@ -6,14 +6,22 @@ import { CreateApiKey, RevokeApiKey } from "@/components/admin/api-key-manager";
 export const metadata = { title: "API & Integrasi" };
 
 const ENDPOINTS = [
-  ["GET", "/api/v1/products", "Daftar produk (limit, page, search, active)"],
-  ["POST", "/api/v1/products", "Buat produk baru"],
+  ["GET", "/api/v1/products", "Daftar produk (limit, page, search, active, updated_since)"],
+  ["POST", "/api/v1/products", "Buat produk (+ varian)"],
   ["GET", "/api/v1/products/:id", "Detail produk"],
   ["PATCH", "/api/v1/products/:id", "Perbarui produk"],
   ["DELETE", "/api/v1/products/:id", "Hapus produk"],
   ["GET", "/api/v1/orders", "Daftar pesanan (status, payment_status)"],
   ["GET", "/api/v1/orders/:id", "Detail pesanan"],
   ["PATCH", "/api/v1/orders/:id", "Perbarui status pesanan"],
+  ["GET", "/api/v1/discounts", "Daftar kode diskon"],
+  ["POST", "/api/v1/discounts", "Buat kode diskon"],
+  ["PATCH", "/api/v1/discounts/:id", "Perbarui diskon"],
+  ["DELETE", "/api/v1/discounts/:id", "Hapus diskon"],
+  ["GET", "/api/v1/webhooks", "Daftar webhook"],
+  ["POST", "/api/v1/webhooks", "Daftarkan webhook"],
+  ["PATCH", "/api/v1/webhooks/:id", "Perbarui webhook"],
+  ["DELETE", "/api/v1/webhooks/:id", "Hapus webhook"],
 ] as const;
 
 const METHOD_STYLE: Record<string, "success" | "brand" | "warning" | "danger"> = {
@@ -35,8 +43,9 @@ export default async function AdminApiPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">API & Integrasi</h1>
         <p className="text-sm text-muted-foreground">
-          Akses produk & pesanan secara programatis melalui Admin API — mirip
-          Shopify. Autentikasi memakai API key di header.
+          Akses produk, pesanan, diskon & webhook secara programatis melalui
+          Admin API — mirip Shopify. Autentikasi memakai API key di header,
+          dengan scope per-key dan rate limit 120 permintaan / menit.
         </p>
       </div>
 

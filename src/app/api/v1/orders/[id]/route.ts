@@ -8,7 +8,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await authenticateApiKey(request);
+  const auth = await authenticateApiKey(request, "read_orders");
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
@@ -34,7 +34,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await authenticateApiKey(request);
+  const auth = await authenticateApiKey(request, "write_orders");
   if (!auth.ok) return auth.response;
 
   const { id } = await params;

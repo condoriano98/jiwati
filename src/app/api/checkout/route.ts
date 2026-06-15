@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isMidtransConfigured, createSnapTransaction } from "@/lib/midtrans";
 import { isXenditConfigured, createInvoice } from "@/lib/xendit";
 import { validateDiscount } from "@/lib/discounts";
+import { emitEvent } from "@/lib/webhooks";
 
 const FREE_SHIPPING_THRESHOLD = 300000;
 const FLAT_SHIPPING = 20000;
@@ -151,6 +152,8 @@ export async function POST(request: Request) {
   await supabase
     .from("order_items")
     .insert(orderItems.map((it) => ({ ...it, order_id: order.id })));
+
+  await emitEvent("order.created", { ...order, items: orderItems });
 
   const origin = new URL(request.url).origin;
 

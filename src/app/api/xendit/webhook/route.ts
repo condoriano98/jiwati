@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { emitEvent } from "@/lib/webhooks";
 
 // Xendit invoice callback. Configure this URL in the Xendit dashboard
 // (Settings → Webhooks → Invoices) and set XENDIT_CALLBACK_TOKEN.
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
     // Decrement inventory once the order is confirmed paid.
     if (paymentStatus === "paid") {
       await admin.rpc("apply_order_stock", { p_order_id: external_id });
+      await emitEvent("order.paid", { id: external_id });
     }
   }
 

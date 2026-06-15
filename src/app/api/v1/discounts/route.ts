@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // GET /api/v1/discounts
 export async function GET(request: Request) {
-  const auth = await authenticateApiKey(request);
+  const auth = await authenticateApiKey(request, "read_discounts");
   if (!auth.ok) return auth.response;
 
   const url = new URL(request.url);
@@ -39,7 +39,7 @@ const createSchema = z.object({
 
 // POST /api/v1/discounts
 export async function POST(request: Request) {
-  const auth = await authenticateApiKey(request);
+  const auth = await authenticateApiKey(request, "write_discounts");
   if (!auth.ok) return auth.response;
 
   let body: unknown;

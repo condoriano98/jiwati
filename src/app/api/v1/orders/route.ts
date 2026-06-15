@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // GET /api/v1/orders?limit=&page=&status=&payment_status=
 export async function GET(request: Request) {
-  const auth = await authenticateApiKey(request);
+  const auth = await authenticateApiKey(request, "read_orders");
   if (!auth.ok) return auth.response;
 
   const url = new URL(request.url);
