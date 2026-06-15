@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard, Package, Upload, ShoppingBag, Store, Leaf, KeyRound, Tag, Webhook } from "lucide-react";
+import { LayoutDashboard, Package, Upload, ShoppingBag, Store, Leaf, KeyRound, Tag, Webhook, MessageSquare } from "lucide-react";
 import { requireAdmin } from "@/lib/auth-guard";
 
 const NAV = [
@@ -8,6 +8,7 @@ const NAV = [
   { href: "/admin/produk/import", label: "Import Produk", icon: Upload },
   { href: "/admin/pesanan", label: "Pesanan", icon: ShoppingBag },
   { href: "/admin/diskon", label: "Diskon", icon: Tag },
+  { href: "/admin/ulasan", label: "Ulasan", icon: MessageSquare },
   { href: "/admin/api", label: "API & Integrasi", icon: KeyRound },
   { href: "/admin/webhook", label: "Webhook", icon: Webhook },
 ];

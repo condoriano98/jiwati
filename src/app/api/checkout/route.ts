@@ -6,9 +6,11 @@ import { isMidtransConfigured, createSnapTransaction } from "@/lib/midtrans";
 import { isXenditConfigured, createInvoice } from "@/lib/xendit";
 import { validateDiscount } from "@/lib/discounts";
 import { emitEvent } from "@/lib/webhooks";
+import { sendOrderConfirmation } from "@/lib/email";
 
 const FREE_SHIPPING_THRESHOLD = 300000;
 const FLAT_SHIPPING = 20000;
+const TAX_RATE = Number(process.env.TAX_RATE) || 0; // e.g. 0.11 for PPN 11%
 
 const schema = z.object({
   items: z
@@ -21,6 +23,7 @@ const schema = z.object({
     )
     .min(1),
   discountCode: z.string().optional(),
+  guestEmail: z.string().email().optional(),
   address: z.object({
     recipient: z.string().min(1),
     phone: z.string().min(1),
@@ -38,15 +41,21 @@ export async function POST(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Silakan masuk terlebih dahulu" }, { status: 401 });
-  }
 
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) {
     return NextResponse.json({ error: "Data tidak valid" }, { status: 400 });
   }
-  const { items, address, discountCode: discount } = parsed.data;
+  const { items, address, discountCode: discount, guestEmail } = parsed.data;
+
+  // Either a signed-in user or a guest email is required.
+  const email = user?.email ?? guestEmail ?? "";
+  if (!user && !guestEmail) {
+    return NextResponse.json(
+      { error: "Masuk atau masukkan email untuk melanjutkan" },
+      { status: 400 },
+    );
+  }
 
   // Re-price on the server from the DB — never trust client prices.
   const productIds = [...new Set(items.map((i) => i.productId))];
@@ -128,16 +137,21 @@ export async function POST(request: Request) {
   }
 
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING;
-  const total = Math.max(0, subtotal - discountAmount) + shipping;
+  const taxBase = Math.max(0, subtotal - discountAmount);
+  const tax = Math.round(taxBase * TAX_RATE);
+  const total = taxBase + tax + shipping;
 
-  // Create the order (RLS ensures user_id matches the caller).
-  const { data: order, error: orderErr } = await supabase
+  // Create the order via the service role (supports guest orders with no user).
+  const orderAdmin = createAdminClient();
+  const { data: order, error: orderErr } = await orderAdmin
     .from("orders")
     .insert({
-      user_id: user.id,
+      user_id: user?.id ?? null,
+      guest_email: user ? null : guestEmail,
       subtotal,
       discount_code: discountCode,
       discount_amount: discountAmount,
+      tax_amount: tax,
       shipping_cost: shipping,
       total,
       shipping_address: address,
@@ -149,7 +163,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Gagal membuat pesanan" }, { status: 500 });
   }
 
-  await supabase
+  await orderAdmin
     .from("order_items")
     .insert(orderItems.map((it) => ({ ...it, order_id: order.id })));
 
@@ -165,7 +179,7 @@ export async function POST(request: Request) {
       const invoice = await createInvoice({
         externalId: order.id,
         amount: total,
-        payerEmail: user.email ?? "",
+        payerEmail: email,
         description: `Pesanan Jiwati #${order.id.slice(0, 8)}`,
         items: [
           ...orderItems.map((it) => ({
@@ -180,7 +194,7 @@ export async function POST(request: Request) {
         successRedirectUrl: `${origin}/checkout/sukses?order=${order.id}`,
         failureRedirectUrl: `${origin}/checkout?gagal=1`,
       });
-      await supabase
+      await orderAdmin
         .from("orders")
         .update({ midtrans_order_id: invoice.id })
         .eq("id", order.id);
@@ -209,11 +223,11 @@ export async function POST(request: Request) {
         ],
         customer: {
           name: address.recipient,
-          email: user.email ?? "",
+          email: email,
           phone: address.phone,
         },
       });
-      await supabase
+      await orderAdmin
         .from("orders")
         .update({ midtrans_order_id: order.id })
         .eq("id", order.id);
@@ -233,6 +247,7 @@ export async function POST(request: Request) {
     .update({ status: "paid", payment_status: "paid" })
     .eq("id", order.id);
   await admin.rpc("apply_order_stock", { p_order_id: order.id });
+  await sendOrderConfirmation({ to: email, orderId: order.id, total, items: orderItems });
 
   return NextResponse.json({ redirectUrl: `/checkout/sukses?order=${order.id}` });
 }

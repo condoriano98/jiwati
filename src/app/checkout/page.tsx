@@ -16,6 +16,7 @@ import {
 
 const FREE_SHIPPING_THRESHOLD = 300000;
 const FLAT_SHIPPING = 20000;
+const TAX_RATE = Number(process.env.NEXT_PUBLIC_TAX_RATE) || 0;
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -54,6 +55,9 @@ export default function CheckoutPage() {
     setApplying(false);
   }
   const [form, setForm] = useState({ recipient: "", phone: "" });
+  const [guestEmail, setGuestEmail] = useState("");
+  const taxBase = Math.max(0, subtotal - (discountAmount ?? 0));
+  const tax = Math.round(taxBase * TAX_RATE);
   const [region, setRegion] = useState<IndonesiaAddressValue>({
     province: "",
     city: "",
@@ -99,6 +103,7 @@ export default function CheckoutPage() {
           quantity: l.quantity,
         })),
         discountCode: discount?.code,
+        guestEmail: signedIn ? undefined : guestEmail,
         address: { ...form, ...region },
       }),
     });
@@ -126,25 +131,32 @@ export default function CheckoutPage() {
     );
   }
 
-  if (authChecked && !signedIn) {
-    return (
-      <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <h1 className="text-xl font-bold">Masuk untuk Melanjutkan</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Anda perlu masuk ke akun untuk menyelesaikan pesanan.
-        </p>
-        <Button asChild className="mt-4">
-          <Link href="/masuk">Masuk</Link>
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-bold tracking-tight">Checkout</h1>
       <form onSubmit={onSubmit} className="grid gap-8 lg:grid-cols-3">
         <Card className="space-y-4 p-6 lg:col-span-2">
+          {authChecked && !signedIn && (
+            <div className="space-y-1.5 rounded-lg bg-muted/50 p-3">
+              <Label htmlFor="guestEmail">Email (checkout sebagai tamu)</Label>
+              <Input
+                id="guestEmail"
+                type="email"
+                required
+                placeholder="email@contoh.com"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Sudah punya akun?{" "}
+                <Link href="/masuk" className="font-semibold text-brand-700 hover:underline">
+                  Masuk
+                </Link>{" "}
+                untuk menyimpan riwayat pesanan.
+              </p>
+            </div>
+          )}
           <h2 className="font-bold">Alamat Pengiriman</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -209,15 +221,19 @@ export default function CheckoutPage() {
                 <span>−{formatIDR(discountAmount)}</span>
               </div>
             )}
+            {tax > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">PPN</span>
+                <span>{formatIDR(tax)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Ongkir</span>
               <span>{shipping === 0 ? "Gratis" : formatIDR(shipping)}</span>
             </div>
             <div className="flex justify-between border-t border-border pt-2 text-base font-bold">
               <span>Total</span>
-              <span className="text-brand-700">
-                {formatIDR(Math.max(0, subtotal - discountAmount) + shipping)}
-              </span>
+              <span className="text-brand-700">{formatIDR(taxBase + tax + shipping)}</span>
             </div>
           </div>
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}

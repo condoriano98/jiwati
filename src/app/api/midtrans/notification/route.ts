@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { emitEvent } from "@/lib/webhooks";
+import { sendOrderConfirmationById } from "@/lib/email";
 
 // Midtrans server-to-server payment notification webhook.
 export async function POST(request: Request) {
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
     if (paymentStatus === "paid") {
       await admin.rpc("apply_order_stock", { p_order_id: order_id });
       await emitEvent("order.paid", { id: order_id });
+      await sendOrderConfirmationById(order_id);
     }
   }
 

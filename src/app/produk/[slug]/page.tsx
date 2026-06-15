@@ -8,6 +8,8 @@ import { ProductOptions } from "@/components/product/product-options";
 import { ProductCard } from "@/components/product/product-card";
 import { formatIDR } from "@/lib/utils";
 import { getProductBySlug, getProducts } from "@/lib/queries";
+import { createClient } from "@/lib/supabase/server";
+import { ReviewForm } from "@/components/product/review-form";
 
 export async function generateMetadata({
   params,
@@ -31,6 +33,17 @@ export default async function ProductDetailPage({
   const related = (
     await getProducts({ category: product.categories?.[0]?.slug, limit: 5 })
   ).filter((p) => p.id !== product.id).slice(0, 4);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: reviews } = await supabase
+    .from("reviews")
+    .select("id, author_name, rating, title, body, created_at")
+    .eq("product_id", product.id)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
 
   const discount =
     product.compare_at_price && product.compare_at_price > product.price
@@ -131,6 +144,43 @@ export default async function ProductDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Reviews */}
+      <section className="mt-16 max-w-3xl">
+        <h2 className="mb-4 text-xl font-bold tracking-tight">
+          Ulasan Pelanggan {reviews && reviews.length > 0 && `(${reviews.length})`}
+        </h2>
+
+        <div className="mb-6 rounded-xl border border-border bg-muted/40 p-5">
+          <h3 className="mb-3 font-semibold">Tulis Ulasan</h3>
+          <ReviewForm productId={product.id} slug={product.slug} signedIn={Boolean(user)} />
+        </div>
+
+        {reviews && reviews.length > 0 ? (
+          <div className="space-y-4">
+            {reviews.map((r) => (
+              <div key={r.id} className="border-b border-border pb-4">
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`h-4 w-4 ${n <= r.rating ? "fill-accent-400 text-accent-400" : "text-border"}`}
+                    />
+                  ))}
+                  <span className="ml-2 text-sm font-semibold">{r.author_name ?? "Pelanggan"}</span>
+                </div>
+                {r.title && <p className="mt-1 font-medium">{r.title}</p>}
+                {r.body && <p className="mt-1 text-sm text-muted-foreground">{r.body}</p>}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {new Date(r.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Belum ada ulasan. Jadilah yang pertama!</p>
+        )}
+      </section>
 
       {related.length > 0 && (
         <section className="mt-16">
