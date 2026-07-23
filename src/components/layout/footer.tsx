@@ -34,6 +34,8 @@ export function Footer() {
             <li><Link href="/tentang" className="hover:text-white">Tentang Kami</Link></li>
             <li><Link href="/kontak" className="hover:text-white">Kontak</Link></li>
             <li><Link href="/faq" className="hover:text-white">Bantuan / FAQ</Link></li>
+            <li><Link href="/pengembalian" className="hover:text-white">Kebijakan Pengembalian</Link></li>
+            <li><Link href="/syarat-ketentuan" className="hover:text-white">Syarat &amp; Ketentuan</Link></li>
           </ul>
         </div>
 
